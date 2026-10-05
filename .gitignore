@@ -1,0 +1,16 @@
+# Raw WESAD data (~2.5 GB download, ~5 GB extracted) - downloaded by the notebook
+data/raw/
+*.pkl
+*.zip
+WESAD/
+WESAD_data/
+
+# Python / Jupyter
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS
+.DS_Store
