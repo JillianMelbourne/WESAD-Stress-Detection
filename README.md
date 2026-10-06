@@ -1,6 +1,6 @@
 # WESAD Stress Detection: Dataset Selection and Exploratory Data Analysis
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1oeY_zjkO_-KTP62gS0wEi5qLPyRlYNJH?usp=sharing)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_S2_exploration.ipynb)
 
 **Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 3: Dataset Selection and Final Project Planning Lab
 
@@ -31,61 +31,16 @@ The raw data (~2.5 GB for all participants) are **not stored in this repository*
 6. **Exploratory visualizations:** aligned multi-sensor session, ECG vs. BVP snippets, window features over time, feature distributions by condition.
 7. **Data quality notes** and 8. **Summary.**
 
-## Getting the data into Google Colab
+## How to run in Google Colab
 
-The notebook expects this layout, relative to the folder it is run from, and only needs the S2 folder:
+The data file is too large for GitHub, so you upload `S2.pkl` to Colab yourself.
 
-```
-<DATA_DIR>/
-└── S2/
-    └── S2.pkl        (~930 MB)
-```
+1. **Get `S2.pkl`.** Download the WESAD zip from the [UCI page](https://archive.ics.uci.edu/dataset/465/wesad+wearable+stress+and+affect+detection), unzip it, and find `S2/S2.pkl` (~930 MB). This is the only file the notebook uses.
+2. **Open the notebook in Colab.** Click the **Open In Colab** badge above, or go to <https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_S2_exploration.ipynb>.
+3. **Upload `S2.pkl`.** In Colab, open the **Files** panel (folder icon on the left). Create the folders `data/raw/S2/` (right-click → **New folder**), then drag `S2.pkl` into `data/raw/S2/`. Wait for the upload to finish.
+4. **Run it.** Choose **Runtime → Run all**. The first code cell should print `Loaded S2`.
 
-### Step 1: Get `S2.pkl` from UCI
-1. Download the WESAD archive from the UCI page above (the `WESAD.zip` file, ~2.5 GB).
-2. Unzip it on your computer. Inside you will find one folder per participant (`S2/`, `S3/`, …).
-3. You only need `S2/S2.pkl`. The other participants are not used in this analysis.
-
-### Step 2: Open the notebook in Colab
-Click the **Open In Colab** badge above, or use this link:
-<https://colab.research.google.com/drive/1oeY_zjkO_-KTP62gS0wEi5qLPyRlYNJH?usp=sharing>
-
-Shared notebooks open read-only for others. Use **File → Save a copy in Drive** to get your own editable copy before running it.
-
-### Step 3: Make `S2.pkl` available to the notebook (choose one)
-
-#### Option A: Google Drive (recommended; upload once, reuse every session)
-1. In Google Drive, create a folder named `WESAD` and a subfolder `S2`, then upload `S2.pkl` into it so the path is `My Drive/WESAD/S2/S2.pkl`.
-2. In the first code cell of the notebook (Section 0. Setup), add this *above* the imports and change `DATA_DIR`:
-   ```python
-   from google.colab import drive
-   drive.mount("/content/drive")      # approve the Google sign-in prompt
-   ```
-   ```python
-   DATA_DIR = Path("/content/drive/MyDrive/WESAD")   # folder that contains S2/S2.pkl
-   ```
-3. Run the cell. Success looks like `Loaded S2`.
-
-#### Option B: Upload straight to the Colab session (no Drive needed, but temporary)
-1. In Colab, open the **Files** panel (folder icon in the left sidebar).
-2. Create the folders `data/raw/S2/` under `/content` (right-click → New folder), then drag `S2.pkl` into `data/raw/S2/`.
-3. Leave `DATA_DIR = Path("data/raw")` as it is. It already matches this layout.
-4. Wait for the upload to finish (the progress indicator at the bottom of the Files panel) before running the loading cell.
-
-Session files are deleted when the Colab runtime is recycled or disconnects, so you will need to re-upload next time. Use Option A to avoid that.
-
-### Step 4: Check that it worked
-Run this in a new cell. It should print `True` and a file size of roughly 930 MB:
-```python
-p = DATA_DIR / "S2" / "S2.pkl"
-print(p.exists(), f"{p.stat().st_size / 1e6:,.0f} MB" if p.exists() else "")
-```
-Then **Runtime → Run all**. No GPU is needed; the standard runtime has enough memory to load the file.
-
-### Troubleshooting
-- `FileNotFoundError`: `DATA_DIR` does not point at the folder *containing* `S2/`. Print the path above and compare it with the Files panel (Drive files appear under `drive/MyDrive/`).
-- Unpickling error / garbled load: keep `encoding="latin1"` in `pickle.load`. The files were saved with Python 2.
-- Upload stalls or the runtime disconnects mid-upload: use Option A, since Drive uploads resume and persist.
+Colab deletes uploaded files when the session ends, so you'll need to upload `S2.pkl` again next time.
 
 ## Running locally (alternative)
 ```bash
