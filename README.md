@@ -1,14 +1,17 @@
-# WESAD Stress Detection: Dataset Selection and Project Planning
+# WESAD Stress Detection: Dataset Selection and Exploratory Data Analysis
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_dataset_exploration.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1oeY_zjkO_-KTP62gS0wEi5qLPyRlYNJH?usp=sharing)
 
 **Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 3: Dataset Selection and Final Project Planning Lab
 
+> **Scope note: this exploratory data analysis looks at one participant only (S2).**
+> WESAD has 15 participants (S2–S11, S13–S17). The notebook `WESAD_S2_exploration.ipynb` loads only `S2/S2.pkl`, so everything it shows (descriptive statistics, figures, data-quality notes) describes S2 alone and should not be read as a statement about the whole cohort. The single-subject analysis is a first pass to understand the data structure before scaling the pipeline to all participants.
+
 ## Purpose
-This repository is the starting point for my final course project: a supervised binary classifier that detects acute psychosocial stress from wearable physiological signals. This first stage selects and justifies the dataset, turns raw sensor streams into an analysis table, explores and quality-checks it, and lays out the modelling plan.
+This repository is the starting point for my final course project: a supervised binary classifier that detects acute psychosocial stress from wearable physiological signals. This first stage selects and justifies the dataset and explores one participant (S2) in depth: raw structure, target variable, predictors, descriptive statistics, visualizations, and data quality.
 
 ## Why this dataset
-My background is in signal processing for deep brain stimulation and wearables, so this dataset feels like familiar territory with new tools. Stress is largely invisible and hard to measure beyond self-report, yet it has profound health effects, from cardiovascular disease to mental health. Wearables offer one of the most promising routes to measuring it passively and continuously. The goal is a complete pipeline, from raw signal processing through model evaluation.
+My background is in signal processing for deep brain stimulation and wearables, so this dataset feels like familiar territory with new tools. Stress is largely invisible and hard to measure beyond self-report, yet it has profound health effects, from cardiovascular disease to mental health. Wearables offer one of the most promising routes to measuring it passively and continuously.
 
 ## Dataset
 **WESAD (Wearable Stress and Affect Detection)**, Schmidt et al., 2018.
@@ -16,57 +19,95 @@ UCI Machine Learning Repository: <https://archive.ics.uci.edu/dataset/465/wesad+
 
 15 participants wore a chest sensor (RespiBAN: ECG, EDA, EMG, respiration, temperature, 3-axis acceleration, all at 700 Hz) and a wrist sensor (Empatica E4: blood volume pulse 64 Hz, 3-axis acceleration 32 Hz, EDA 4 Hz, skin temperature 4 Hz) during a lab protocol with baseline, amusement, stress (Trier Social Stress Test), and meditation conditions.
 
-The raw data (~2.5 GB) are **not stored in this repository**. The notebook downloads them from UCI automatically.
+The raw data (~2.5 GB for all participants) are **not stored in this repository**. For this S2 analysis you only need one file, `S2/S2.pkl` (~930 MB).
 
-### How the project criteria are met
-| Requirement | WESAD |
-|---|---|
-| Binary classification | `stress` = 1 for the TSST stress condition, 0 for baseline + amusement (the authors' binary task) |
-| ≥ 300 observations | ~1,000 single-condition 60-second windows across 15 subjects (exact count printed in Section 8 of the notebook) |
-| ≥ 10 predictors | 32 engineered features per window (18 chest, 14 wrist) |
+## What the notebook does (S2 only)
+`WESAD_S2_exploration.ipynb`:
+1. **Dataset selection:** rationale for choosing WESAD.
+2. **Dataset exploration:** structure of the S2 pickle, sampling rates, units, label coding.
+3. **Target variable:** binary `stress` (TSST stress = 1; baseline + amusement = 0; transitions, meditation and ignored periods excluded).
+4. **Predictor variables:** chest and wrist signals, and 60-second windowed features (30-second step).
+5. **Descriptive statistics:** raw-signal and window-feature summaries by condition.
+6. **Exploratory visualizations:** aligned multi-sensor session, ECG vs. BVP snippets, window features over time, feature distributions by condition.
+7. **Data quality notes** and 8. **Summary.**
 
-## What the notebook does
-1. **Data selection:** dataset rationale, criteria check, backup dataset (UCI Mushroom).
-2. **Import and raw structure:** downloads and extracts the per-subject pickles, prints the nested signal structure, sampling rates, units, and label coding.
-3. **Feature engineering:** aligns the two devices in time, cuts 60-s windows (30-s step), keeps only windows with a single condition, and extracts heart rate/HRV (ECG, BVP), electrodermal activity, respiration, temperature, EMG, and movement features.
-4. **Descriptive statistics:** table structure, target distribution, windows per subject, feature summaries, class-wise means with Cohen's *d*.
-5. **Visualizations (5):** raw signals by condition, class balance per subject, key features by class, per-subject variability, feature correlation matrix.
-6. **Data quality:** raw NaNs, device alignment, label coding (transient/ignored samples), windowing losses, feature missingness, implausible values, outliers; discussion of preprocessing and challenges.
-7. **Project planning:** prediction problem, target, leave-one-subject-out validation, candidate models, and evaluation metrics (primary: macro F1; secondary: AUROC, balanced accuracy, sensitivity/specificity).
-8. **Requirements check:** assertions that the analysis table meets the project criteria, plus session info.
+## Getting the data into Google Colab
 
-## Repository contents
-| Path | Description |
-|---|---|
-| `WESAD_dataset_exploration.ipynb` | Main notebook (run in Google Colab) |
-| `requirements.txt` | Package versions for running locally |
-| `figures/` | Figures written by the notebook |
-| `data/processed/wesad_window_features.csv` | Window-level feature table written by the notebook (one row per 60-s window) |
-| `README.md` | This file |
+The notebook expects this layout, relative to the folder it is run from, and only needs the S2 folder:
 
-## How to run
+```
+<DATA_DIR>/
+└── S2/
+    └── S2.pkl        (~930 MB)
+```
 
-### Option A: Google Colab (recommended)
-1. Click the **Open in Colab** badge above.
-2. Choose **Runtime → Run all**. No GPU is needed.
-3. The first run downloads ~2.5 GB from UCI and extracts the 15 subject files (a few minutes), then builds the feature table (a few more minutes).
-4. *Optional:* set `USE_DRIVE_CACHE = True` in Section 2.1 to keep the extracted data (~5 GB) in Google Drive, so later runs skip the download.
+### Step 1: Get `S2.pkl` from UCI
+1. Download the WESAD archive from the UCI page above (the `WESAD.zip` file, ~2.5 GB).
+2. Unzip it on your computer. Inside you will find one folder per participant (`S2/`, `S3/`, …).
+3. You only need `S2/S2.pkl`. The other participants are not used in this analysis.
 
-### Option B: Run locally
+### Step 2: Open the notebook in Colab
+Click the **Open In Colab** badge above, or use this link:
+<https://colab.research.google.com/drive/1oeY_zjkO_-KTP62gS0wEi5qLPyRlYNJH?usp=sharing>
+
+Shared notebooks open read-only for others. Use **File → Save a copy in Drive** to get your own editable copy before running it.
+
+### Step 3: Make `S2.pkl` available to the notebook (choose one)
+
+#### Option A: Google Drive (recommended; upload once, reuse every session)
+1. In Google Drive, create a folder named `WESAD` and a subfolder `S2`, then upload `S2.pkl` into it so the path is `My Drive/WESAD/S2/S2.pkl`.
+2. In the first code cell of the notebook (Section 0. Setup), add this *above* the imports and change `DATA_DIR`:
+   ```python
+   from google.colab import drive
+   drive.mount("/content/drive")      # approve the Google sign-in prompt
+   ```
+   ```python
+   DATA_DIR = Path("/content/drive/MyDrive/WESAD")   # folder that contains S2/S2.pkl
+   ```
+3. Run the cell. Success looks like `Loaded S2`.
+
+#### Option B: Upload straight to the Colab session (no Drive needed, but temporary)
+1. In Colab, open the **Files** panel (folder icon in the left sidebar).
+2. Create the folders `data/raw/S2/` under `/content` (right-click → New folder), then drag `S2.pkl` into `data/raw/S2/`.
+3. Leave `DATA_DIR = Path("data/raw")` as it is. It already matches this layout.
+4. Wait for the upload to finish (the progress indicator at the bottom of the Files panel) before running the loading cell.
+
+Session files are deleted when the Colab runtime is recycled or disconnects, so you will need to re-upload next time. Use Option A to avoid that.
+
+### Step 4: Check that it worked
+Run this in a new cell. It should print `True` and a file size of roughly 930 MB:
+```python
+p = DATA_DIR / "S2" / "S2.pkl"
+print(p.exists(), f"{p.stat().st_size / 1e6:,.0f} MB" if p.exists() else "")
+```
+Then **Runtime → Run all**. No GPU is needed; the standard runtime has enough memory to load the file.
+
+### Troubleshooting
+- `FileNotFoundError`: `DATA_DIR` does not point at the folder *containing* `S2/`. Print the path above and compare it with the Files panel (Drive files appear under `drive/MyDrive/`).
+- Unpickling error / garbled load: keep `encoding="latin1"` in `pickle.load`. The files were saved with Python 2.
+- Upload stalls or the runtime disconnects mid-upload: use Option A, since Drive uploads resume and persist.
+
+## Running locally (alternative)
 ```bash
 git clone https://github.com/JillianMelbourne/WESAD-Stress-Detection.git
 cd WESAD-Stress-Detection
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-jupyter notebook WESAD_dataset_exploration.ipynb
+jupyter notebook WESAD_S2_exploration.ipynb
 ```
-Data download to `data/raw/` (ignored by git). If you already have WESAD, point the notebook at it with `export WESAD_DATA_DIR=/path/to/WESAD` before launching Jupyter. Any folder containing `S2/S2.pkl` … `S17/S17.pkl` works.
+Place `S2.pkl` at `data/raw/S2/S2.pkl` (this folder is ignored by git), or change `DATA_DIR` in the notebook's setup cell.
 
-### Notes on reproducibility
-- Run the notebook top to bottom. Later cells depend on objects created earlier (`df`, `FEATURES`, the QC tables).
-- Feature extraction is deterministic; the only random step (jitter in one plot) is seeded with `RANDOM_SEED = 42`.
-- Feature extraction holds one subject in memory at a time (~1 GB peak), well within a standard Colab runtime.
+## Repository contents
+| Path | Description |
+|---|---|
+| `WESAD_S2_exploration.ipynb` | Main notebook: exploratory analysis of participant S2 only |
+| `data/raw/` | Raw WESAD files (not tracked by git; only `S2/S2.pkl` is needed) |
+| `data/data_documentation/` | Dataset documentation from the authors (`wesad_readme.pdf`) |
+| `figures/` | Figures from the S2 exploration |
+| `Archive/` | Earlier multi-subject notebook and single-subject plotting script, kept for reference |
+| `requirements.txt` | Package versions for running locally |
+| `README.md` | This file |
 
 ## Software
 | Package | Version |
@@ -77,10 +118,11 @@ Data download to `data/raw/` (ignored by git). If you already have WESAD, point 
 | scipy | 1.16.3 |
 | matplotlib | 3.10.0 |
 
-All are preinstalled in Google Colab. The notebook prints the versions it runs with in its first cell.
+All are preinstalled in Google Colab.
 
 ## Limitations (summary)
-- Only 15 participants: windows from the same person are correlated, so evaluation must be subject-wise.
+- **This analysis covers one participant (S2).** Results, feature distributions, and apparent stress effects may not generalize to the other 14 participants.
+- Only 15 participants in the full dataset: windows from the same person are correlated, so later modelling must evaluate subject-wise.
 - Lab protocol: stress always involved speaking and standing, so some signal changes may reflect the task, not stress itself.
 - The wrist BVP signal is motion-sensitive and coarser than chest ECG.
 - A small, homogeneous sample of university students; results will not transfer directly to free-living settings.
