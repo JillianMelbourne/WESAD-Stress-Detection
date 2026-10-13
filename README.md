@@ -2,7 +2,7 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nHk-bvfX9Q8kEBYpN2tS5-TOoTffDOKc?usp=sharing)
 
-**Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 3: Dataset Selection and Final Project Planning Lab
+**Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 4: Final Project Progress Update Lab
 
 > **Scope note.** WESAD has 15 participants (S2–S11, S13–S17). The raw-signal exploration (sections 4–7 and Figures 1–4 of the notebook) looks at **one participant, S2**, and should not be read as a statement about the whole cohort. The feature pipeline then runs on **all 15 participants** (sections 8, 9.2 and 11, Figures 5–7), and its output is saved in `data/processed/`.
 
