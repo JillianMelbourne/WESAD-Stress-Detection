@@ -1,0 +1,82 @@
+{
+  "subjects": [
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "S9",
+    "S10",
+    "S11",
+    "S13",
+    "S14",
+    "S15",
+    "S16",
+    "S17"
+  ],
+  "features": [
+    "chest_hr_bpm",
+    "chest_rmssd_ms",
+    "wrist_hr_bpm",
+    "chest_eda_uS",
+    "chest_eda_slope_uS_per_min",
+    "wrist_eda_uS",
+    "wrist_scr_count",
+    "resp_rate_bpm",
+    "resp_interval_sd_s",
+    "chest_temp_C",
+    "wrist_temp_C",
+    "wrist_temp_slope_C_per_min",
+    "emg_rms_mV",
+    "chest_acc_sd_g",
+    "wrist_acc_sd_g"
+  ],
+  "window_s": 60,
+  "step_s": 30,
+  "min_label_purity": 1.0,
+  "target_map": {
+    "1": 0,
+    "3": 0,
+    "2": 1
+  },
+  "filters": {
+    "ecg": [
+      5,
+      15
+    ],
+    "bvp": [
+      0.7,
+      3.5
+    ],
+    "resp": [
+      0.1,
+      0.7
+    ],
+    "eda_low": 1.0,
+    "emg_high": 20
+  },
+  "quality": {
+    "hr_range": [
+      40,
+      180
+    ],
+    "min_beats": 10,
+    "hr_agreement": 10,
+    "max_ibi_rejected": 0.2,
+    "temp_range": [
+      25,
+      40
+    ],
+    "min_wrist_eda": 0.05
+  },
+  "exclude_features": {
+    "S2": [
+      "chest_temp_C"
+    ],
+    "S17": [
+      "chest_temp_C"
+    ]
+  }
+}
