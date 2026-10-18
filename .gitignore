@@ -14,3 +14,6 @@ venv/
 
 # OS
 .DS_Store
+
+# Files uploaded through the notebook
+data/uploads/
