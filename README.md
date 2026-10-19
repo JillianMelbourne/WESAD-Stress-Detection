@@ -1,115 +1,89 @@
-# WESAD Stress Detection: Dataset Selection, Exploratory Analysis and Feature Pipeline
+# WESAD Stress Detection
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_stress_pipeline.ipynb)
 
 **Shared Colab notebook:** <https://colab.research.google.com/drive/1UJU_u2qojZmoUMo3Pse6NRSlskIUc7TJ?usp=sharing>
 
-**Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 4: Final Project Progress Update Lab
+An end-to-end, reproducible pipeline that detects acute psychological stress from wearable chest and wrist sensors. It turns raw physiological signals into 60-second window features, tests which signals change under stress, and compares supervised classifiers on participants the models have never seen.
 
-> **Scope note.** WESAD has 15 participants (S2–S11, S13–S17). The raw-signal deep dive (section 5 and Figures 1–4 of the notebook) looks at **one participant, S2**, and should not be read as a statement about the whole cohort. The feature pipeline and all later analyses cover **all 15 participants** (sections 6–13, Figures 5–21), using the feature table saved in `data/processed/`.
+**Author:** Jillian Melbourne
 
-## Purpose
-This repository is the starting point for my final course project: a supervised binary classifier that detects acute psychosocial stress from wearable physiological signals. This stage selects and justifies the dataset, explores one participant (S2) in depth (raw structure, target variable, predictors, descriptive statistics, visualizations, data quality), and builds the window-level feature table for all 15 participants that the classifier will use.
+## Overview
+Stress is hard to measure beyond self-report, yet it has major health effects, from cardiovascular disease to mental health. Wearable sensors could measure it passively and continuously. This project asks two questions:
 
-## Why this dataset
-My background is in signal processing for deep brain stimulation and wearables, so this dataset feels like familiar territory with new tools. Stress is largely invisible and hard to measure beyond self-report, yet it has profound health effects, from cardiovascular disease to mental health. Wearables offer one of the most promising routes to measuring it passively and continuously.
+1. **Which physiological signals change under acute stress, and which predict it independently?**
+2. **How well can a classifier detect stress in a person it was not trained on?**
+
+The analysis lives in one notebook, `WESAD_stress_pipeline.ipynb`. The reusable code (loading, feature extraction, normalization, plotting) lives in the `src/wesad/` package, so the notebook can focus on decisions and results.
 
 ## Dataset
 **WESAD (Wearable Stress and Affect Detection)**, Schmidt et al., 2018.
-UCI Machine Learning Repository: <https://archive.ics.uci.edu/dataset/465/wesad+wearable+stress+and+affect+detection>
+Source: [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/465/wesad+wearable+stress+and+affect+detection) (CC BY 4.0)
 
-15 participants wore a chest sensor (RespiBAN: ECG, EDA, EMG, respiration, temperature, 3-axis acceleration, all at 700 Hz) and a wrist sensor (Empatica E4: blood volume pulse 64 Hz, 3-axis acceleration 32 Hz, EDA 4 Hz, skin temperature 4 Hz) during a lab protocol with baseline, amusement, stress (Trier Social Stress Test), and meditation conditions.
+Fifteen adults (S2–S11, S13–S17) completed a lab protocol with baseline, amusement, stress and meditation conditions while wearing two devices:
 
-The raw data (~2.5 GB for all participants) are **not stored in this repository**. To run the notebook you only need one file, `S2/S2.pkl` (~930 MB): the cohort sections read the feature table already saved in `data/processed/`. All 15 pickles are needed only to rebuild that table.
+| Device | Signals | Sampling rate |
+|---|---|---|
+| Chest (RespiBAN) | ECG, electrodermal activity (EDA), EMG, respiration, temperature, 3-axis acceleration | 700 Hz |
+| Wrist (Empatica E4) | Blood volume pulse (BVP), 3-axis acceleration, EDA, skin temperature | 64, 32, 4 and 4 Hz |
 
-## What the notebook does
-`WESAD_stress_pipeline.ipynb` is the main notebook. It focuses on decisions and results; the reusable code lives in `src/wesad/` (see [Project structure](#project-structure)).
+The stress condition is the Trier Social Stress Test: a prepared speech and mental arithmetic in front of an evaluating panel.
 
-1. **Dataset selection** and 2. **Dataset overview and project plan.**
-3. **Setup and run settings:** fetches the project code if needed, and a settings form (data source, deep-dive participant, figure saving).
-4. **Data input and validation:** loads the chosen feature table, validates it, profiles every feature and confirms success.
-5. **Single-participant deep dive (raw signals):** recording structure, target variable and Figures 1–4 for one participant (S2 by default). Runs only when that participant's raw file is present.
-6. **Feature pipeline:** how raw signals become 15 predictors per 60-second window, and the quality flags.
-7. **Cohort overview and data quality:** windows, quality flags and readme notes for each participant.
-8. **Descriptive statistics and feature distributions:** overlaid histograms, box plots and a scatterplot matrix by condition (Figures 5–7).
-9. **Baseline normalization** (Figure 8).
-10. **Effect sizes** (Figures 9 and 10).
-11. **Inferential tests:** participant-level Wilcoxon signed-rank and sign tests with multiple-testing correction (Figure 11); collinearity (Figure 12); conditional (fixed-effects) logistic regression with assumption checks, including the Yeo–Johnson decision, VIF, linearity and a non-overlapping-windows sensitivity refit (Figure 13).
-12. **Model evaluation:** a leave-one-participant-out validation function with nested, participant-grouped tuning; a pre-declared primary metric (F1); a majority-class baseline, logistic regression, elastic-net logistic regression, a decision tree and an RBF-kernel SVM; automatic best-model selection (Figure 14); and what each model learned: elastic-net coefficients and lasso path, the tree diagram, and Gini and permutation importances (Figures 15–17).
-13. **Deep learning:** a multi-layer perceptron (neural network) on the same splits, its training curve, the final model selection across all models (Figures 18–19), and confusion matrices and overlaid ROC curves for every model (Figures 20–21).
-14. **Data quality notes** and 15. **Summary and next steps.**
+**Target variable:** `stress` = 1 for stress windows (WESAD label 2), 0 for baseline and amusement windows (labels 1 and 3). Transitions, meditation and unlabelled periods are excluded.
 
-### Run settings
-The settings cell in section 3 shows as a form in Colab. The defaults run without any input.
+**Observations:** 1,015 sixty-second windows (30-second step), about 68 per participant; about 30% are stress windows.
 
-| Setting | What it does |
+**Features (15 per window):**
+
+| Feature | Source |
 |---|---|
-| `DATA_SOURCE` | **Use saved feature table** (default): `data/processed/wesad_windows.csv`, 1,015 windows from all 15 participants. **Upload my own feature table**: opens a file picker (see [Using your own data](#using-your-own-data)). **Rebuild from raw WESAD files**: re-runs feature extraction on `data/raw/`; falls back to the saved table if no raw files are present. |
-| `UPLOAD_PATH` | Outside Colab only: path to the CSV to analyze. |
-| `DEEP_DIVE_SUBJECT` | Participant for section 5 (needs that participant's raw `.pkl`). |
-| `SAVE_FIGURES` | Save every figure to `figures/`. |
+| Heart rate (chest and wrist), heart rate variability (RMSSD) | ECG, BVP |
+| EDA level (chest and wrist), chest EDA slope, wrist skin conductance response count | EDA |
+| Breathing rate, breath-to-breath variability | Respiration |
+| Chest and wrist temperature, wrist temperature slope | Temperature |
+| Muscle activity (EMG amplitude) | EMG |
+| Movement (chest and wrist) | Accelerometer |
 
-Pipeline settings (window length, filter bands, quality thresholds) are fields of `PipelineConfig` in `src/wesad/config.py`, e.g. `PipelineConfig(window_s=30)`. Changing one requires **Rebuild from raw WESAD files**; the saved table records the settings it was built with (`wesad_windows.json`) and the notebook warns if they differ.
+**Included in this repository:** the processed feature tables in `data/processed/` (`wesad_windows.csv`, its build settings in `wesad_windows.json`, and a baseline-normalized copy). The raw recordings (about 2.5 GB compressed) are **not** included. They are needed only to rebuild the feature table or to run the single-participant raw-signal section.
 
-### Using your own data
-Upload a CSV with one row per time window:
+## What the pipeline does
 
-| Column | Required | Content |
+| Step | Notebook section | What happens |
 |---|---|---|
-| `subject` | yes | participant ID |
-| `stress` | yes | 1 = stress, 0 = non-stress |
-| any numeric columns | at least one | features (e.g., heart rate, skin conductance) |
-| `condition` | optional | e.g. `baseline`, `stress`; enables normalization against true baseline windows |
+| 1. Data input and validation | 3–4 | Loads the saved feature table, a user-uploaded CSV, or rebuilds features from raw files; checks required columns, the 0/1 target, class sizes and participant count; profiles every feature |
+| 2. Signal processing (optional) | 5–6 | Filters raw signals, detects heartbeats and breaths, cuts 60-second windows, computes 15 features and flags poor-quality windows (motion artifact, sensor contact loss, implausible values) |
+| 3. Exploration | 7–8 | Data-quality summary per participant, descriptive statistics, histograms, box plots and a scatterplot matrix by condition |
+| 4. Baseline normalization | 9 | Expresses each feature relative to the participant's own resting level, removing large between-person differences |
+| 5. Effect sizes | 10 | Cohen's d within each participant and pooled |
+| 6. Inferential statistics | 11 | Participant-level Wilcoxon signed-rank and sign tests (Holm and Benjamini–Hochberg corrected); Spearman correlation and VIF for collinearity; conditional (fixed-effects) logistic regression with assumption checks and a non-overlapping-windows sensitivity analysis |
+| 7. Classification | 12–13 | Majority-class baseline, logistic regression, elastic-net logistic regression, decision tree, RBF-kernel SVM and a multi-layer perceptron, all evaluated with leave-one-participant-out cross-validation and nested, participant-grouped tuning |
+| 8. Model selection and interpretation | 12–13 | Best model chosen by a pre-declared primary metric (F1 for the stress class); per-participant results, confusion matrices, ROC curves, coefficients, tree diagram and feature importances |
 
-The notebook checks the table and stops with a list of every problem if it cannot be used (missing columns, a target other than 0/1, fewer than two participants or five windows per class). Fixable issues are handled and reported: rows without a target and features more than half empty are dropped, and text columns are ignored.
+**The pipeline adapts to the data:** it drops mostly-missing features, removes one feature from each highly correlated pair, applies class weighting when stress is the minority class, adds a Yeo–Johnson transform when features are strongly skewed, and falls back to stratified cross-validation (with a warning) when there are too few participants for leave-one-participant-out.
 
-## Pipeline improvements (October 2026)
-Changes made after the first S2-only exploration:
+## Key results
 
-1. **Modular, multi-subject pipeline.** The single feature-extraction cell was split into functions (`load_subject`, `preprocess`, `window_features`, `extract_windows`, `build_feature_table`) and now runs on all 15 participants, one at a time to limit memory. The result (1,015 windows) is cached in `data/processed/wesad_windows.csv` with the settings used to build it (`wesad_windows.json`); a rebuild from raw data is chosen in the notebook's run settings, and the notebook warns if the saved table's settings differ from the current ones.
-2. **Data validation and quality flags.** Each raw file is checked on load (all channels present, durations match the label, no NaNs, no flat channels, known label codes) and a missing or invalid participant is skipped with a clear message. Each window gets flags for missing HR, chest–wrist HR disagreement (likely BVP motion artifact), ECG artifact, implausible skin temperature, and lost wrist-EDA contact. Chest temperature is excluded for S2 and S17, whose readmes say the sensor was not fully attached, and the other readme notes are shown alongside the results.
-3. **New features and baseline normalization.** Added EMG amplitude (previously loaded but unused), breath-to-breath variability and wrist temperature slope. Every feature also gets a baseline-normalized copy (`*_bz`: distance from the participant's own baseline mean, in units of their SD), which removes between-person offsets such as differing resting heart rates. Normalized features are saved in `data/processed/wesad_windows_normalized.csv`. Wrist RMSSD was tested and left out because 64 Hz pulse-peak timing made it unreliable.
-4. **Effect-size summary.** A table and two figures rank features by Cohen's d (stress vs. non-stress) within each participant and pooled, and show how consistent each feature is across participants (Figures 9 and 10).
-5. **Organization and reproducibility.** Numbered sections that match the table of contents, a single configuration cell, every figure saved to `figures/` automatically, and package versions printed at the top of the run.
+| Model | Mean F1 (± SD across participants) |
+|---|---|
+| **SVM (RBF kernel)** | **0.94 ± 0.09** |
+| Elastic-net logistic regression | 0.88 ± 0.14 |
+| Logistic regression | 0.87 ± 0.25 |
+| Neural network (MLP) | 0.86 ± 0.25 |
+| Decision tree | 0.82 ± 0.13 |
+| Majority-class baseline | 0.00 |
 
-6. **Package structure and run settings.** The pipeline functions moved from the notebook into the `src/wesad/` package, with all settings in a single `PipelineConfig`. The notebook starts with a settings form to choose the data source (saved table, own upload, or rebuild from raw files), validates and profiles whatever it loads, and runs end to end with no uploads.
+- **Signals that change under stress:** heart rate, skin conductance responses, breathing irregularity and chest movement rose in all 15 participants; EDA rose in 14 of 15.
+- **Independent predictors:** in the fixed-effects logistic regression, each 1-SD rise above a person's resting level multiplies the odds of stress by 15.0 for wrist heart rate, 14.0 for wrist EDA and 4.5 for breathing irregularity; cooler wrist temperature also predicts stress (OR 0.38).
+- **Best model:** the SVM detects 92% of stress windows with a 1.4% false-alarm rate on unseen participants, and is the only model that works well for the one participant whose skin conductance fell under stress.
 
-Optional: if a file `<subject>_compact.npz` (the same arrays as float32) sits next to a participant's pickle, `load_subject` reads it instead, which is several times faster. These files are in `data/raw/` and are not tracked by git.
+## How to use
 
-## How to run in Google Colab
+### Option 1: Google Colab (recommended)
+1. Open the [shared Colab notebook](https://colab.research.google.com/drive/1UJU_u2qojZmoUMo3Pse6NRSlskIUc7TJ?usp=sharing), or click the **Open In Colab** badge above to open the latest version from GitHub.
+2. Choose **Runtime → Run all.** No uploads are needed: the first code cell downloads the project code and saved feature table from this repository. A full run takes about 3–4 minutes.
+3. Section 4 confirms success with `✅ Dataset loaded and validated ... 1,015 windows, 15 features, 15 participants`.
 
-1. **Open the notebook:** use the shared Colab notebook at <https://colab.research.google.com/drive/1UJU_u2qojZmoUMo3Pse6NRSlskIUc7TJ?usp=sharing>, or click the **Open In Colab** badge above to open the latest version straight from GitHub.
-2. **Run it:** choose **Runtime → Run all.** No uploads are needed: the first code cell downloads the project code and the saved feature table from this repository. The full run takes about 3–4 minutes, most of it the nested tuning of the elastic net in section 12.
-3. **Check it worked:** section 4 prints `✅ Dataset loaded and validated ... 1,015 windows, 15 features, 15 participants`.
-
-Section 5 (the raw-signal deep dive for one participant) is skipped unless that participant's raw file is present; everything else runs without it. To include it:
-1. Download the WESAD zip from the [UCI page](https://archive.ics.uci.edu/dataset/465/wesad+wearable+stress+and+affect+detection), unzip it, and find `WESAD/S2/S2.pkl` (~930 MB).
-2. Run the notebook once so the project folder exists, then in the **Files** panel (folder icon on the left) open `WESAD-Stress-Detection/data/raw/`, create a folder `S2`, and drag `S2.pkl` into it.
-3. **Runtime → Run all** again.
-
-Colab deletes uploaded files when the session ends.
-
-### Troubleshooting
-| What you see | What it means | Fix |
-|---|---|---|
-| `src/wesad was not found` | The downloaded copy of the repository is out of date | Delete the `WESAD-Stress-Detection` folder in the **Files** panel and run again |
-| `Feature table failed validation` followed by a list | An uploaded table cannot be used as it is | Fix each listed problem in the CSV and upload it again |
-| `Uploading through the browser only works in Google Colab` | You chose **Upload** while running outside Colab | Set `UPLOAD_PATH` to the CSV's location |
-| `No raw WESAD files found ... falling back` | **Rebuild** was chosen but `data/raw/` is empty | Expected unless you have the raw data; the saved table is used instead |
-| Session crashes during a rebuild | Colab ran out of memory | **Runtime → Restart session**, then **Run all** again |
-
-### Rebuilding the feature table from raw data (optional)
-Only needed after changing a pipeline setting. It uses all 15 raw files (~14 GB), so keep them in Google Drive rather than uploading them each session:
-1. Upload the unzipped `WESAD` folder to **My Drive**.
-2. Add a cell after the settings cell and run it:
-   ```python
-   from google.colab import drive
-   drive.mount("/content/drive")
-   cfg = PipelineConfig(data_dir="/content/drive/MyDrive/WESAD")
-   ```
-3. Set `DATA_SOURCE` to **Rebuild from raw WESAD files** and run the notebook from section 4 onwards. Expect a minute or two per participant.
-
-## Running locally (alternative)
+### Option 2: Run locally
 ```bash
 git clone https://github.com/JillianMelbourne/WESAD-Stress-Detection.git
 cd WESAD-Stress-Detection
@@ -118,30 +92,81 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 jupyter notebook WESAD_stress_pipeline.ipynb
 ```
-Raw files, if you have them, go in `data/raw/<subject>/<subject>.pkl` (ignored by git).
+Then choose **Run all**.
+
+### Run settings
+The settings cell in section 3 appears as a form in Colab. The defaults run without any input.
+
+| Setting | What it does |
+|---|---|
+| `DATA_SOURCE` | **Use saved feature table** (default): the 1,015-window table in `data/processed/`. **Upload my own feature table**: opens a file picker (see below). **Rebuild from raw WESAD files**: re-runs feature extraction on `data/raw/`; falls back to the saved table if no raw files are present. |
+| `UPLOAD_PATH` | Outside Colab only: path to the CSV to analyze. |
+| `DEEP_DIVE_SUBJECT` | Participant shown in the raw-signal section (needs that participant's raw file). |
+| `SAVE_FIGURES` | Saves every figure to `figures/`. |
+
+Pipeline settings (window length, filter bands, quality thresholds) are fields of `PipelineConfig` in `src/wesad/config.py`. Changing one requires **Rebuild from raw WESAD files**; the notebook warns if the saved table was built with different settings.
+
+### Using your own data
+Choose **Upload my own feature table** and provide a CSV with one row per time window:
+
+| Column | Required | Content |
+|---|---|---|
+| `subject` | yes | Participant ID |
+| `stress` | yes | 1 = stress, 0 = non-stress |
+| Numeric feature columns | at least one | e.g. heart rate, skin conductance |
+| `condition` | optional | e.g. `baseline`, `stress`; enables normalization against true baseline windows |
+
+The notebook stops with a list of every problem if the table cannot be used (missing columns, a target other than 0/1, fewer than two participants or fewer than five windows per class). Fixable issues are handled and reported: rows without a target and mostly-empty features are dropped, and text columns are ignored.
+
+### Including the raw-signal section (optional)
+The single-participant deep dive (section 5) runs only when that participant's raw file is present. To include it:
+1. Download the WESAD zip from the [UCI page](https://archive.ics.uci.edu/dataset/465/wesad+wearable+stress+and+affect+detection) and unzip it.
+2. Place `WESAD/S2/S2.pkl` (about 930 MB) at `data/raw/S2/S2.pkl`. In Colab, run the notebook once, then use the **Files** panel to create `WESAD-Stress-Detection/data/raw/S2/` and drag the file in.
+3. Run all again.
+
+### Rebuilding the feature table from raw data (optional)
+Needed only after changing a pipeline setting. It uses all 15 raw files, so in Colab keep them in Google Drive:
+1. Upload the unzipped `WESAD` folder to **My Drive**.
+2. Add and run a cell after the settings cell:
+   ```python
+   from google.colab import drive
+   drive.mount("/content/drive")
+   cfg = PipelineConfig(data_dir="/content/drive/MyDrive/WESAD")
+   ```
+3. Set `DATA_SOURCE` to **Rebuild from raw WESAD files** and run from section 4 onwards (about a minute or two per participant).
+
+If a file `<subject>_compact.npz` (the same arrays stored as float32) sits next to a participant's pickle, it is loaded instead, which is several times faster.
+
+### Troubleshooting
+| What you see | What it means | Fix |
+|---|---|---|
+| `src/wesad was not found` | The downloaded copy of the repository is incomplete or out of date | In Colab, choose **Runtime → Disconnect and delete runtime**, then run all again |
+| `Feature table failed validation` followed by a list | An uploaded table cannot be used as it is | Fix each listed problem in the CSV and upload it again |
+| `Uploading through the browser only works in Google Colab` | **Upload** was chosen outside Colab | Set `UPLOAD_PATH` to the CSV's location |
+| `No raw WESAD files found ... falling back` | **Rebuild** was chosen but `data/raw/` is empty | Expected without the raw data; the saved table is used instead |
+| Session crashes during a rebuild | Colab ran out of memory | **Runtime → Restart session**, then run all again |
 
 ## Project structure
 ```
 WESAD-Stress-Detection/
 ├── WESAD_stress_pipeline.ipynb      main notebook (narrative, results, figures)
-├── src/wesad/                       pipeline code, imported by the notebook
-│   ├── config.py                    PipelineConfig: every setting in one place; fixed WESAD facts
-│   ├── loading.py                   load/validate raw files and feature tables; profiling; upload
-│   ├── features.py                  raw signals -> 60-s window features and quality flags
-│   ├── analysis.py                  baseline normalization, effect sizes
+├── src/wesad/                       pipeline code imported by the notebook
+│   ├── config.py                    PipelineConfig: every setting in one place
+│   ├── loading.py                   load and validate raw files and feature tables; profiling; upload
+│   ├── features.py                  raw signals -> 60-second window features and quality flags
+│   ├── analysis.py                  baseline normalization and effect sizes
 │   └── plots.py                     figure helpers
 ├── data/
 │   ├── raw/                         raw WESAD files (not tracked by git)
-│   ├── processed/                   feature tables for all 15 participants + settings used
-│   └── data_documentation/          dataset documentation from the authors
+│   ├── processed/                   feature tables for all 15 participants + build settings
+│   └── data_documentation/          dataset documentation from the WESAD authors
 ├── figures/                         Figures 1–21, saved when the notebook runs
-├── WESAD_updated_exploration.ipynb  earlier single-notebook version, kept for reference
-├── Archive/                         earlier exploration notebook and script
+├── Archive/                         earlier exploration notebooks and scripts
 ├── requirements.txt
 └── README.md
 ```
 
-## Software
+## Requirements
 | Package | Version |
 |---|---|
 | Python | 3.11 or newer |
@@ -153,18 +178,17 @@ WESAD-Stress-Detection/
 | scikit-learn | 1.3 or newer |
 | statsmodels | 0.14 or newer |
 
-All are preinstalled in Google Colab.
+All are preinstalled in Google Colab. Run `pip install -r requirements.txt` for a local setup.
 
-## Limitations (summary)
-- **The raw-signal exploration covers one participant (S2).** The cohort feature table and effect sizes cover all 15, but no classifier has been trained or evaluated yet.
-- Within-participant effect sizes are inflated by overlapping windows and stable within-condition signals; pooled effect sizes are the better guide to performance on new people.
-- Only 15 participants in the full dataset: windows from the same person are correlated, so later modelling must evaluate subject-wise.
-- Lab protocol: stress always involved speaking and standing, so some signal changes may reflect the task, not stress itself.
-- The wrist BVP signal is motion-sensitive and coarser than chest ECG.
-- A small, homogeneous sample of university students; results will not transfer directly to free-living settings.
+## Limitations
+- **Small sample.** Fifteen participants, mostly young university students; results may not transfer to other populations or to free-living settings.
+- **Dependent windows.** Windows overlap by 50% and come from few people, so evaluation holds out whole participants and regression p-values are approximate.
+- **Task confound.** The stress task involved standing and speaking, so some changes (movement, breathing irregularity) may reflect the task rather than stress itself.
+- **Signal quality.** Wrist BVP is motion-sensitive; wrist heart-rate variability was unreliable and is not used.
+- **Personal differences.** One participant's skin conductance fell under stress; such person-level differences suggest a deployed device would need brief personal calibration.
 
 ## References
 - Schmidt P, Reiss A, Duerichen R, Marberger C, Van Laerhoven K. Introducing WESAD, a multimodal dataset for wearable stress and affect detection. *ICMI 2018*:400–408. https://doi.org/10.1145/3242969.3242985
 - Kirschbaum C, Pirke KM, Hellhammer DH. The 'Trier Social Stress Test'. *Neuropsychobiology*. 1993;28(1–2):76–81.
 
-WESAD is distributed by UCI under CC BY 4.0 for research use. Please cite Schmidt et al. (2018) when using it.
+WESAD is distributed by UCI under CC BY 4.0. Please cite Schmidt et al. (2018) when using it.
