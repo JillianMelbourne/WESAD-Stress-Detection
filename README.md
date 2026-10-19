@@ -187,6 +187,8 @@ All are preinstalled in Google Colab. Run `pip install -r requirements.txt` for 
 - **Signal quality.** Wrist BVP is motion-sensitive; wrist heart-rate variability was unreliable and is not used.
 - **Personal differences.** One participant's skin conductance fell under stress; such person-level differences suggest a deployed device would need brief personal calibration.
 
+## AI use disclaimer
+Claude Code (Anthropic, Claude Opus 5.5) was used as a coding assistant during this project: troubleshooting errors, organizing the code into the `src/wesad/` .py files, and editing documentation. 
 ## References
 - Schmidt P, Reiss A, Duerichen R, Marberger C, Van Laerhoven K. Introducing WESAD, a multimodal dataset for wearable stress and affect detection. *ICMI 2018*:400–408. https://doi.org/10.1145/3242969.3242985
 - Kirschbaum C, Pirke KM, Hellhammer DH. The 'Trier Social Stress Test'. *Neuropsychobiology*. 1993;28(1–2):76–81.
