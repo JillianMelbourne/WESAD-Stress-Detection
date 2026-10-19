@@ -2,8 +2,8 @@
 data/raw/
 *.pkl
 *.zip
-WESAD/
-WESAD_data/
+/WESAD/
+/WESAD_data/
 
 # Python / Jupyter
 __pycache__/
