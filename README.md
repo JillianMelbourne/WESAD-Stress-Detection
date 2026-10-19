@@ -4,7 +4,7 @@
 
 **Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 4: Final Project Progress Update Lab
 
-> **Scope note.** WESAD has 15 participants (S2–S11, S13–S17). The raw-signal deep dive (section 5 and Figures 1–4 of the notebook) looks at **one participant, S2**, and should not be read as a statement about the whole cohort. The feature pipeline and all later analyses cover **all 15 participants** (sections 6–10, Figures 5–7), using the feature table saved in `data/processed/`.
+> **Scope note.** WESAD has 15 participants (S2–S11, S13–S17). The raw-signal deep dive (section 5 and Figures 1–4 of the notebook) looks at **one participant, S2**, and should not be read as a statement about the whole cohort. The feature pipeline and all later analyses cover **all 15 participants** (sections 6–13, Figures 5–21), using the feature table saved in `data/processed/`.
 
 ## Purpose
 This repository is the starting point for my final course project: a supervised binary classifier that detects acute psychosocial stress from wearable physiological signals. This stage selects and justifies the dataset, explores one participant (S2) in depth (raw structure, target variable, predictors, descriptive statistics, visualizations, data quality), and builds the window-level feature table for all 15 participants that the classifier will use.
@@ -29,10 +29,13 @@ The raw data (~2.5 GB for all participants) are **not stored in this repository*
 5. **Single-participant deep dive (raw signals):** recording structure, target variable and Figures 1–4 for one participant (S2 by default). Runs only when that participant's raw file is present.
 6. **Feature pipeline:** how raw signals become 15 predictors per 60-second window, and the quality flags.
 7. **Cohort overview and data quality:** windows, quality flags and readme notes for each participant.
-8. **Descriptive statistics.**
-9. **Baseline normalization** (Figure 5).
-10. **Effect sizes** (Figures 6 and 7).
-11. **Data quality notes** and 12. **Summary and next steps.**
+8. **Descriptive statistics and feature distributions:** overlaid histograms, box plots and a scatterplot matrix by condition (Figures 5–7).
+9. **Baseline normalization** (Figure 8).
+10. **Effect sizes** (Figures 9 and 10).
+11. **Inferential tests:** participant-level Wilcoxon signed-rank and sign tests with multiple-testing correction (Figure 11); collinearity (Figure 12); conditional (fixed-effects) logistic regression with assumption checks, including the Yeo–Johnson decision, VIF, linearity and a non-overlapping-windows sensitivity refit (Figure 13).
+12. **Model evaluation:** a leave-one-participant-out validation function with nested, participant-grouped tuning; a pre-declared primary metric (F1); a majority-class baseline, logistic regression, elastic-net logistic regression, a decision tree and an RBF-kernel SVM; automatic best-model selection (Figure 14); and what each model learned: elastic-net coefficients and lasso path, the tree diagram, and Gini and permutation importances (Figures 15–17).
+13. **Deep learning:** a multi-layer perceptron (the course architecture) on the same splits, its training curve, the final model selection across all models (Figures 18–19), and confusion matrices and overlaid ROC curves for every model (Figures 20–21).
+14. **Data quality notes** and 15. **Summary and next steps.**
 
 ### Run settings
 The settings cell in section 3 shows as a form in Colab. The defaults run without any input.
@@ -64,7 +67,7 @@ Changes made after the first S2-only exploration:
 1. **Modular, multi-subject pipeline.** The single feature-extraction cell was split into functions (`load_subject`, `preprocess`, `window_features`, `extract_windows`, `build_feature_table`) and now runs on all 15 participants, one at a time to limit memory. The result (1,015 windows) is cached in `data/processed/wesad_windows.csv` with the settings used to build it (`wesad_windows.json`); a rebuild from raw data is chosen in the notebook's run settings, and the notebook warns if the saved table's settings differ from the current ones.
 2. **Data validation and quality flags.** Each raw file is checked on load (all channels present, durations match the label, no NaNs, no flat channels, known label codes) and a missing or invalid participant is skipped with a clear message. Each window gets flags for missing HR, chest–wrist HR disagreement (likely BVP motion artifact), ECG artifact, implausible skin temperature, and lost wrist-EDA contact. Chest temperature is excluded for S2 and S17, whose readmes say the sensor was not fully attached, and the other readme notes are shown alongside the results.
 3. **New features and baseline normalization.** Added EMG amplitude (previously loaded but unused), breath-to-breath variability and wrist temperature slope. Every feature also gets a baseline-normalized copy (`*_bz`: distance from the participant's own baseline mean, in units of their SD), which removes between-person offsets such as differing resting heart rates. Normalized features are saved in `data/processed/wesad_windows_normalized.csv`. Wrist RMSSD was tested and left out because 64 Hz pulse-peak timing made it unreliable.
-4. **Effect-size summary.** A table and two figures rank features by Cohen's d (stress vs. non-stress) within each participant and pooled, and show how consistent each feature is across participants (Figures 6 and 7).
+4. **Effect-size summary.** A table and two figures rank features by Cohen's d (stress vs. non-stress) within each participant and pooled, and show how consistent each feature is across participants (Figures 9 and 10).
 5. **Organization and reproducibility.** Numbered sections that match the table of contents, a single configuration cell, every figure saved to `figures/` automatically, and package versions printed at the top of the run.
 
 6. **Package structure and run settings.** The pipeline functions moved from the notebook into the `src/wesad/` package, with all settings in a single `PipelineConfig`. The notebook starts with a settings form to choose the data source (saved table, own upload, or rebuild from raw files), validates and profiles whatever it loads, and runs end to end with no uploads.
@@ -74,7 +77,7 @@ Optional: if a file `<subject>_compact.npz` (the same arrays as float32) sits ne
 ## How to run in Google Colab
 
 1. **Open the notebook:** click the **Open In Colab** badge above, or go to <https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_stress_pipeline.ipynb>.
-2. **Run it:** choose **Runtime → Run all.** No uploads are needed: the first code cell downloads the project code and the saved feature table from this repository. The full run takes under a minute.
+2. **Run it:** choose **Runtime → Run all.** No uploads are needed: the first code cell downloads the project code and the saved feature table from this repository. The full run takes about 3–4 minutes, most of it the nested tuning of the elastic net in section 12.
 3. **Check it worked:** section 4 prints `✅ Dataset loaded and validated ... 1,015 windows, 15 features, 15 participants`.
 
 Section 5 (the raw-signal deep dive for one participant) is skipped unless that participant's raw file is present; everything else runs without it. To include it:
@@ -129,7 +132,7 @@ WESAD-Stress-Detection/
 │   ├── raw/                         raw WESAD files (not tracked by git)
 │   ├── processed/                   feature tables for all 15 participants + settings used
 │   └── data_documentation/          dataset documentation from the authors
-├── figures/                         Figures 1–7, saved when the notebook runs
+├── figures/                         Figures 1–21, saved when the notebook runs
 ├── WESAD_updated_exploration.ipynb  earlier single-notebook version, kept for reference
 ├── Archive/                         earlier exploration notebook and script
 ├── requirements.txt
@@ -144,6 +147,9 @@ WESAD-Stress-Detection/
 | pandas | 2.2.3 |
 | scipy | 1.16.3 |
 | matplotlib | 3.10.0 |
+| seaborn | 0.13 or newer |
+| scikit-learn | 1.3 or newer |
+| statsmodels | 0.14 or newer |
 
 All are preinstalled in Google Colab.
 
