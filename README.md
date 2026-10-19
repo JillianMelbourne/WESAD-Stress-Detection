@@ -2,6 +2,8 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_stress_pipeline.ipynb)
 
+**Shared Colab notebook:** <https://colab.research.google.com/drive/1UJU_u2qojZmoUMo3Pse6NRSlskIUc7TJ?usp=sharing>
+
 **Jillian Melbourne** · HSE.751 (Dartmouth Health Data Science), Fall 2026 · Week 4: Final Project Progress Update Lab
 
 > **Scope note.** WESAD has 15 participants (S2–S11, S13–S17). The raw-signal deep dive (section 5 and Figures 1–4 of the notebook) looks at **one participant, S2**, and should not be read as a statement about the whole cohort. The feature pipeline and all later analyses cover **all 15 participants** (sections 6–13, Figures 5–21), using the feature table saved in `data/processed/`.
@@ -34,7 +36,7 @@ The raw data (~2.5 GB for all participants) are **not stored in this repository*
 10. **Effect sizes** (Figures 9 and 10).
 11. **Inferential tests:** participant-level Wilcoxon signed-rank and sign tests with multiple-testing correction (Figure 11); collinearity (Figure 12); conditional (fixed-effects) logistic regression with assumption checks, including the Yeo–Johnson decision, VIF, linearity and a non-overlapping-windows sensitivity refit (Figure 13).
 12. **Model evaluation:** a leave-one-participant-out validation function with nested, participant-grouped tuning; a pre-declared primary metric (F1); a majority-class baseline, logistic regression, elastic-net logistic regression, a decision tree and an RBF-kernel SVM; automatic best-model selection (Figure 14); and what each model learned: elastic-net coefficients and lasso path, the tree diagram, and Gini and permutation importances (Figures 15–17).
-13. **Deep learning:** a multi-layer perceptron (the course architecture) on the same splits, its training curve, the final model selection across all models (Figures 18–19), and confusion matrices and overlaid ROC curves for every model (Figures 20–21).
+13. **Deep learning:** a multi-layer perceptron (neural network) on the same splits, its training curve, the final model selection across all models (Figures 18–19), and confusion matrices and overlaid ROC curves for every model (Figures 20–21).
 14. **Data quality notes** and 15. **Summary and next steps.**
 
 ### Run settings
@@ -76,7 +78,7 @@ Optional: if a file `<subject>_compact.npz` (the same arrays as float32) sits ne
 
 ## How to run in Google Colab
 
-1. **Open the notebook:** click the **Open In Colab** badge above, or go to <https://colab.research.google.com/github/JillianMelbourne/WESAD-Stress-Detection/blob/main/WESAD_stress_pipeline.ipynb>.
+1. **Open the notebook:** use the shared Colab notebook at <https://colab.research.google.com/drive/1UJU_u2qojZmoUMo3Pse6NRSlskIUc7TJ?usp=sharing>, or click the **Open In Colab** badge above to open the latest version straight from GitHub.
 2. **Run it:** choose **Runtime → Run all.** No uploads are needed: the first code cell downloads the project code and the saved feature table from this repository. The full run takes about 3–4 minutes, most of it the nested tuning of the elastic net in section 12.
 3. **Check it worked:** section 4 prints `✅ Dataset loaded and validated ... 1,015 windows, 15 features, 15 participants`.
 
